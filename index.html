@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لعبة إكس أو العربية</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Tahoma,sans-serif;
+}
+
+body{
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:
+radial-gradient(circle at top left,#60a5fa,transparent 30%),
+radial-gradient(circle at bottom right,#f472b6,transparent 30%),
+linear-gradient(135deg,#0f172a,#1e293b,#111827);
+color:white;
+padding:20px;
+}
+
+.card{
+background:rgba(255,255,255,0.12);
+padding:25px;
+border-radius:25px;
+text-align:center;
+box-shadow:0 20px 50px rgba(0,0,0,.4);
+width:100%;
+max-width:450px;
+}
+
+.hidden{
+display:none;
+}
+
+h1{
+margin-bottom:15px;
+}
+
+p{
+margin-top:10px;
+margin-bottom:5px;
+}
+
+select{
+width:100%;
+padding:12px;
+border:none;
+border-radius:12px;
+margin-bottom:10px;
+font-size:16px;
+}
+
+button{
+cursor:pointer;
+border:none;
+}
+
+.main-btn{
+background:linear-gradient(45deg,#22c55e,#06b6d4);
+color:white;
+padding:12px 20px;
+border-radius:12px;
+font-size:18px;
+font-weight:bold;
+margin-top:10px;
+}
+
+.board{
+display:grid;
+grid-template-columns:repeat(3,100px);
+gap:10px;
+justify-content:center;
+margin-top:15px;
+}
+
+.cell{
+width:100px;
+height:100px;
+border:none;
+border-radius:18px;
+background:white;
+font-size:60px;
+font-weight:bold;
+cursor:pointer;
+transition:0.2s;
+}
+
+.cell:hover{
+transform:scale(1.05);
+}
+
+#status{
+font-size:22px;
+font-weight:bold;
+margin-bottom:15px;
+min-height:40px;
+}
+
+.win{
+animation:pulse .8s infinite alternate;
+}
+
+@keyframes pulse{
+from{transform:scale(1);}
+to{transform:scale(1.08);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card" id="setup">
+
+<h1>🎮 لعبة إكس أو</h1>
+
+<p>اختر وضع اللعب</p>
+<select id="gameMode">
+<option value="pvp">لاعب ضد لاعب</option>
+<option value="bot">لاعب ضد الروبوت</option>
+</select>
+
+<p>مستوى الروبوت</p>
+<select id="botLevel">
+<option value="easy">مبتدئ</option>
+<option value="medium">متوسط</option>
+<option value="hard">صعب</option>
+</select>
+
+<p>اختر لون اللاعب X</p>
+<select id="xColor">
+<option value="dodgerblue">أزرق</option>
+<option value="limegreen">أخضر</option>
+<option value="red">أحمر</option>
+</select>
+
+<p>اختر لون اللاعب O</p>
+<select id="oColor">
+<option value="red">أحمر</option>
+<option value="gold">أصفر</option>
+<option value="purple">بنفسجي</option>
+</select>
+
+<button class="main-btn" onclick="startGame()">
+🚀 ابدأ اللعبة
+</button>
+
+</div>
+
+<div class="card hidden" id="game">
+
+<h1>🔥 لعبة إكس أو</h1>
+
+<div id="status">
+دور اللاعب X
+</div>
+
+<div class="board">
+
+<button class="cell"></button>
+<button class="cell"></button>
+<button class="cell"></button>
+
+<button class="cell"></button>
+<button class="cell"></button>
+<button class="cell"></button>
+
+<button class="cell"></button>
+<button class="cell"></button>
+<button class="cell"></button>
+
+</div>
+
+<br>
+
+<button class="main-btn" onclick="resetGame()">
+🔄 إعادة اللعبة
+</button>
+
+</div>
+
+<script>
+
+let xColor="dodgerblue";
+let oColor="red";
+
+let gameMode="pvp";
+let botLevel="easy";
+
+function startGame(){
+
+xColor=document.getElementById("xColor").value;
+oColor=document.getElementById("oColor").value;
+
+gameMode=document.getElementById("gameMode").value;
+botLevel=document.getElementById("botLevel").value;
+
+document.getElementById("setup").classList.add("hidden");
+document.getElementById("game").classList.remove("hidden");
+}
+
+const cells=document.querySelectorAll(".cell");
+const statusText=document.getElementById("status");
+
+let currentPlayer="X";
+let gameRunning=true;
+
+const winPatterns=[
+[0,1,2],
+[3,4,5],
+[6,7,8],
+[0,3,6],
+[1,4,7],
+[2,5,8],
+[0,4,8],
+[2,4,6]
+];
+
+cells.forEach((cell,index)=>{
+
+cell.addEventListener("click",()=>{
+
+if(!gameRunning) return;
+
+if(cell.textContent!=="") return;
+
+makeMove(index,currentPlayer);
+
+if(checkWinner()) return;
+
+if([...cells].every(c=>c.textContent!=="")){
+statusText.textContent="🤝 انتهت اللعبة بالتعادل";
+gameRunning=false;
+return;
+}
+
+if(gameMode==="bot" && currentPlayer==="X"){
+
+currentPlayer="O";
+statusText.textContent="🤖 دور الروبوت";
+
+setTimeout(()=>{
+botMove();
+},300);
+
+}else{
+
+currentPlayer=currentPlayer==="X"?"O":"X";
+statusText.textContent="دور اللاعب " + currentPlayer;
+
+}
+
+});
+
+});
+
+function makeMove(index,player){
+
+cells[index].textContent=player;
+
+if(player==="X"){
+cells[index].style.color=xColor;
+}else{
+cells[index].style.color=oColor;
+}
+
+}
+
+function botMove(){
+
+if(!gameRunning) return;
+
+let empty=[];
+
+cells.forEach((cell,index)=>{
+if(cell.textContent===""){
+empty.push(index);
+}
+});
+
+if(empty.length===0) return;
+
+let move;
+
+if(botLevel==="easy"){
+
+move=
+empty[Math.floor(Math.random()*empty.length)];
+
+}
+
+else if(botLevel==="medium"){
+
+if(Math.random()<0.5){
+move=findBestMove("O");
+}else{
+move=
+empty[Math.floor(Math.random()*empty.length)];
+}
+
+}
+
+else{
+
+move=findBestMove("O");
+
+}
+
+if(move===undefined || move===null){
+
+move=
+empty[Math.floor(Math.random()*empty.length)];
+
+}
+
+makeMove(move,"O");
+
+if(checkWinner()) return;
+
+if([...cells].every(c=>c.textContent!=="")){
+statusText.textContent="🤝 انتهت اللعبة بالتعادل";
+gameRunning=false;
+return;
+}
+
+currentPlayer="X";
+statusText.textContent="دور اللاعب X";
+
+}
+
+function findBestMove(player){
+
+for(let pattern of winPatterns){
+
+let values=[
+cells[pattern[0]].textContent,
+cells[pattern[1]].textContent,
+cells[pattern[2]].textContent
+];
+
+let countPlayer=
+values.filter(v=>v===player).length;
+
+let countEmpty=
+values.filter(v=>v==="").length;
+
+if(countPlayer===2 && countEmpty===1){
+
+for(let pos of pattern){
+if(cells[pos].textContent===""){
+return pos;
+}
+}
+
+}
+
+}
+
+let opponent=
+player==="O" ? "X" : "O";
+
+for(let pattern of winPatterns){
+
+let values=[
+cells[pattern[0]].textContent,
+cells[pattern[1]].textContent,
+cells[pattern[2]].textContent
+];
+
+let countOpponent=
+values.filter(v=>v===opponent).length;
+
+let countEmpty=
+values.filter(v=>v==="").length;
+
+if(countOpponent===2 && countEmpty===1){
+
+for(let pos of pattern){
+if(cells[pos].textContent===""){
+return pos;
+}
+}
+
+}
+
+}
+
+if(cells[4].textContent===""){
+return 4;
+}
+
+return null;
+
+}
+
+function checkWinner(){
+
+for(const pattern of winPatterns){
+
+const a=cells[pattern[0]].textContent;
+const b=cells[pattern[1]].textContent;
+const c=cells[pattern[2]].textContent;
+
+if(a && a===b && b===c){
+
+if(a==="X"){
+
+statusText.textContent=
+"🎉 مبروك اللاعب X لقد فاز";
+
+}else{
+
+statusText.textContent=
+"🎉 مبروك اللاعب O لقد فاز";
+
+}
+
+statusText.classList.add("win");
+gameRunning=false;
+
+return true;
+}
+
+}
+
+return false;
+}
+
+function resetGame(){
+
+cells.forEach(cell=>{
+
+cell.textContent="";
+cell.style.color="black";
+
+});
+
+currentPlayer="X";
+gameRunning=true;
+
+statusText.classList.remove("win");
+
+statusText.textContent=
+"دور اللاعب X";
+
+}
+
+</script>
+
+</body>
+</html>
